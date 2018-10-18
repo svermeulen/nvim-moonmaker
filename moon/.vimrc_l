@@ -1,0 +1,11 @@
+
+function! g:BuildMoonScriptCompiler()
+    call Ave#Ft#Moon#Compile('C:/Users/sfver/.nvim/plugged/vim-moonscript-plugin-support/moon/MoonScriptCompiler.moon', 'C:/Users/sfver/.nvim/plugged/vim-moonscript-plugin-support/lua/MoonScriptCompiler.lua')
+endfunction
+
+BindAssertBufferLocal
+
+BindMethod n \c -buffer g:BuildMoonScriptCompiler()
+
+BindClearBufferLocal
+
