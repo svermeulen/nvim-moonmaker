@@ -69,7 +69,7 @@ deleteOrphanedLuaFiles = (validBaseNames, pluginRoot) ->
     baseName = baseName\sub(0, #baseName - 4)
 
     if not tableContains(validBaseNames, baseName)
-      --os.remove(fullPath)
+      os.remove(fullPath)
       Output("Deleted file #{filePath} since it had no matching moon file")
 
 shouldCompileMoonFile = (moonPath, luaPath) ->
@@ -118,8 +118,7 @@ MoonScriptCompiler =
             package.loaded[baseName] = nil
             numUpdated += 1
 
-    if numUpdated == 0
-      Output("Compile finished with zero updates")
+    --if numUpdated == 0
       --Output("Compiled #{numUpdated} moon files")
 
 return MoonScriptCompiler
