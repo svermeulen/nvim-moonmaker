@@ -28,6 +28,9 @@ File =
   getModificationTime: (path) ->
     return vim.api.nvim_call_function('getftime', {path})
 
+  delete: (path) ->
+    vim.api.nvim_call_function('delete', { path })
+
 Directory =
   getAllFilesWithExtensionRecursive: (path, extension) ->
     return [Path.normalize(x) for x in *vim.api.nvim_call_function('globpath', {path, "**/*.#{extension}", 0, 1})]
@@ -47,7 +50,7 @@ deleteOrphanedLuaFiles = (validBaseNames, pluginRoot, verbose) ->
     baseName = baseName\sub(0, #baseName - 4)
 
     if not tableContains(validBaseNames, baseName)
-      os.remove(fullPath)
+      File.delete(filePath)
       if verbose
         vim.api.nvim_command("echo 'Deleted file #{filePath} since it had no matching moon file'")
 

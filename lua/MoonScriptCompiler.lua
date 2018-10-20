@@ -26,7 +26,10 @@ local File = {   exists = function(path)
     return io.open(path, 'r') ~= nil   end,   getModificationTime = function(path)
 
 
-    return vim.api.nvim_call_function('getftime', {       path     })   end }
+    return vim.api.nvim_call_function('getftime', {       path     })   end,   delete = function(path)
+
+
+    return vim.api.nvim_call_function('delete', {       path     })   end }
 
 local Directory = {   getAllFilesWithExtensionRecursive = function(path, extension)     local _accum_0 = { }     local _len_0 = 1
 
@@ -47,7 +50,7 @@ local deleteOrphanedLuaFiles deleteOrphanedLuaFiles = function(validBaseNames, p
     baseName = baseName:sub(0, #baseName - 4)
 
     if not tableContains(validBaseNames, baseName) then
-      os.remove(fullPath)
+      File.delete(filePath)
       if verbose then
         vim.api.nvim_command("echo 'Deleted file " .. tostring(filePath) .. " since it had no matching moon file'")       end     end   end end
 
