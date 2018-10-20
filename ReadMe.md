@@ -13,9 +13,9 @@ Then all you need to do is place `.moon` files in a 'moon' directory inside any 
 
 This follows the same convention that Vim uses for other file types.  For example, if you place `Foo.py` inside a directory named 'python3' (underneath the root directory of your plugin) then it can be loaded by executing `:python3 import Foo`.  
 
-And similar rules apply to lua (that is, they are expected to be placed underneath a 'lua' directory) however, despite early plans to do so, direct MoonScript was never added (hence this plugin).
+And similar rules apply to lua (that is, they are expected to be placed underneath a 'lua' directory).   However, despite early plans to do so, direct MoonScript was never added to Neovim (hence this plugin).
 
-All this plugin does is keep the lua directory in sync with the moon directory for every plugin on the runtimepath.
+So all this plugin really does is keep the lua directory in sync with the corresponding moon directory for every plugin on the runtimepath.
 
 Compilation occurs at Neovim startup or whenever manually executed by one of the methods below.  Note that it will only compile the moon files that are out of date (ie. those moon files with a greater file modification time then the corresponding lua file).
 
