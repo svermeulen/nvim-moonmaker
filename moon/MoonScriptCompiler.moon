@@ -1,7 +1,4 @@
 
-Output = (message) ->
-  vim.api.nvim_command("echom '#{message}'")
-
 Path =
   join: (left, right) ->
     result = left
@@ -20,6 +17,9 @@ Path =
       result = result\sub(0, #result - 1)
 
     return result
+
+  getDirectory: (path) ->
+    return path\match('^(.*)[\\/][^\\/]*$')
 
 File =
   exists: (path) ->
@@ -49,7 +49,7 @@ deleteOrphanedLuaFiles = (validBaseNames, pluginRoot, verbose) ->
     if not tableContains(validBaseNames, baseName)
       os.remove(fullPath)
       if verbose
-        Output("Deleted file #{filePath} since it had no matching moon file")
+        vim.api.nvim_command("echo 'Deleted file #{filePath} since it had no matching moon file'")
 
 shouldCompileMoonFile = (moonPath, luaPath) ->
   if not File.exists(luaPath)
@@ -61,7 +61,13 @@ shouldCompileMoonFile = (moonPath, luaPath) ->
   return moonTime > luaTime
 
 compileMoon = (moonPath, luaPath) ->
-  os.execute("moonc -o \"#{luaPath}\" -n \"#{moonPath}\"")
+  dirPath = Path.getDirectory(luaPath)
+  vim.api.nvim_command("call mkdir('#{dirPath}', 'p')")
+  output = vim.api.nvim_call_function("system", { "moonc -o \"#{luaPath}\" -n \"#{moonPath}\"" })
+
+  if vim.api.nvim_eval('v:shell_error') != 0
+    vim.api.nvim_command("echoerr 'Errors occurred when executing moonc for file \"#{moonPath}\"'")
+    -- Can we safely print the output here?
 
 MoonScriptCompiler =
   compile: (verbose) ->
@@ -92,7 +98,7 @@ MoonScriptCompiler =
             compileMoon(moonPath, luaPath)
 
             if verbose
-              Output("Compiled file #{moonPath}")
+              vim.api.nvim_command("echo 'Compiled file #{moonPath}'")
 
             -- Also delete it from the package cache so the next time require(baseName)
             -- is called, it will load the new file
@@ -100,7 +106,7 @@ MoonScriptCompiler =
             numUpdated += 1
 
     if verbose and numUpdated == 0
-      Output("All moon files are already up to date")
+      vim.api.nvim_command("echo 'All moon files are already up to date'")
 
     return numUpdated
 

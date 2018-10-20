@@ -1,7 +1,4 @@
 
-local Output Output = function(message)
-  return vim.api.nvim_command("echom '" .. tostring(message) .. "'") end
-
 local Path = {   join = function(left, right)
 
     local result = left
@@ -19,7 +16,10 @@ local Path = {   join = function(left, right)
     if result:sub(-1) == '/' then
       result = result:sub(0, #result - 1)     end
 
-    return result   end }
+    return result   end,   getDirectory = function(path)
+
+
+    return path:match('^(.*)[\\/][^\\/]*$')   end }
 
 local File = {   exists = function(path)
 
@@ -49,7 +49,7 @@ local deleteOrphanedLuaFiles deleteOrphanedLuaFiles = function(validBaseNames, p
     if not tableContains(validBaseNames, baseName) then
       os.remove(fullPath)
       if verbose then
-        Output("Deleted file " .. tostring(filePath) .. " since it had no matching moon file")       end     end   end end
+        vim.api.nvim_command("echo 'Deleted file " .. tostring(filePath) .. " since it had no matching moon file'")       end     end   end end
 
 local shouldCompileMoonFile shouldCompileMoonFile = function(moonPath, luaPath)
   if not File.exists(luaPath) then
@@ -61,7 +61,13 @@ local shouldCompileMoonFile shouldCompileMoonFile = function(moonPath, luaPath)
   return moonTime > luaTime end
 
 local compileMoon compileMoon = function(moonPath, luaPath)
-  return os.execute("moonc -o \"" .. tostring(luaPath) .. "\" -n \"" .. tostring(moonPath) .. "\"") end
+  local dirPath = Path.getDirectory(luaPath)
+  vim.api.nvim_command("call mkdir('" .. tostring(dirPath) .. "', 'p')")
+  local output = vim.api.nvim_call_function("system", {     "moonc -o \"" .. tostring(luaPath) .. "\" -n \"" .. tostring(moonPath) .. "\""   })
+
+  if vim.api.nvim_eval('v:shell_error') ~= 0 then
+    return vim.api.nvim_command("echoerr 'Errors occurred when executing moonc for file \"" .. tostring(moonPath) .. "\"'")   end end
+
 
 local MoonScriptCompiler = {   compile = function(verbose)
 
@@ -92,7 +98,7 @@ local MoonScriptCompiler = {   compile = function(verbose)
             compileMoon(moonPath, luaPath)
 
             if verbose then
-              Output("Compiled file " .. tostring(moonPath))             end
+              vim.api.nvim_command("echo 'Compiled file " .. tostring(moonPath) .. "'")             end
 
 
 
@@ -100,7 +106,7 @@ local MoonScriptCompiler = {   compile = function(verbose)
             numUpdated = numUpdated + 1           end         end       end     end
 
     if verbose and numUpdated == 0 then
-      Output("All moon files are already up to date")     end
+      vim.api.nvim_command("echo 'All moon files are already up to date'")     end
 
     return numUpdated   end }
 
