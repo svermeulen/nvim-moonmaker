@@ -1,10 +1,8 @@
 
-local Path
-
 local Output Output = function(message)
   return vim.api.nvim_command("echom '" .. tostring(message) .. "'") end
 
-Path = {   join = function(left, right)
+local Path = {   join = function(left, right)
 
     local result = left
     local lastChar = left:sub(-1)
@@ -21,38 +19,18 @@ Path = {   join = function(left, right)
     if result:sub(-1) == '/' then
       result = result:sub(0, #result - 1)     end
 
-    return result   end,   getExtension = function(path)
-
-
-    return path:match('%.([^%.]*)$')   end,   removeExtension = function(fileName)
-
-
-    local extension = Path.getExtension(fileName)
-
-    if extension == nil then
-      return fileName     end
-
-    return fileName:sub(0, #fileName - #extension - 1)   end }
+    return result   end }
 
 local File = {   exists = function(path)
 
     return io.open(path, 'r') ~= nil   end,   getModificationTime = function(path)
 
 
-    return vim.api.nvim_call_function('getftime', {       path     })   end,   getFileName = function(path)
-
-
-    return path:match('[\\/]([^\\/]*)$')   end }
+    return vim.api.nvim_call_function('getftime', {       path     })   end }
 
 local Directory = {   getAllFilesWithExtensionRecursive = function(path, extension)     local _accum_0 = { }     local _len_0 = 1
 
-    local _list_0 = vim.api.nvim_call_function('globpath', {       path,       "**/*." .. tostring(extension),       0,       1     })     for _index_0 = 1, #_list_0 do       local x = _list_0[_index_0]       _accum_0[_len_0] = Path.normalize(x)       _len_0 = _len_0 + 1     end     return _accum_0   end,   getDirectoriesAndFiles = function(path)     local _accum_0 = { }     local _len_0 = 1
-
-
-    local _list_0 = vim.api.nvim_call_function('globpath', {       path,       "*",       0,       1     })     for _index_0 = 1, #_list_0 do       local x = _list_0[_index_0]       _accum_0[_len_0] = Path.normalize(x)       _len_0 = _len_0 + 1     end     return _accum_0   end,   getFilesWithExtension = function(path, extension)     local _accum_0 = { }     local _len_0 = 1
-
-
-    local _list_0 = vim.api.nvim_call_function('globpath', {       path,       "*." .. tostring(extension),       0,       1     })     for _index_0 = 1, #_list_0 do       local x = _list_0[_index_0]       _accum_0[_len_0] = Path.normalize(x)       _len_0 = _len_0 + 1     end     return _accum_0   end }
+    local _list_0 = vim.api.nvim_call_function('globpath', {       path,       "**/*." .. tostring(extension),       0,       1     })     for _index_0 = 1, #_list_0 do       local x = _list_0[_index_0]       _accum_0[_len_0] = Path.normalize(x)       _len_0 = _len_0 + 1     end     return _accum_0   end }
 
 local tableContains tableContains = function(table, element)
   for _index_0 = 1, #table do     local value = table[_index_0]
@@ -61,7 +39,7 @@ local tableContains tableContains = function(table, element)
 
   return false end
 
-local deleteOrphanedLuaFiles deleteOrphanedLuaFiles = function(validBaseNames, pluginRoot)
+local deleteOrphanedLuaFiles deleteOrphanedLuaFiles = function(validBaseNames, pluginRoot, verbose)
   local luaDir = Path.join(pluginRoot, 'lua')
 
   local _list_0 = Directory.getAllFilesWithExtensionRecursive(luaDir, 'lua')   for _index_0 = 1, #_list_0 do     local filePath = _list_0[_index_0]
@@ -70,7 +48,8 @@ local deleteOrphanedLuaFiles deleteOrphanedLuaFiles = function(validBaseNames, p
 
     if not tableContains(validBaseNames, baseName) then
       os.remove(fullPath)
-      Output("Deleted file " .. tostring(filePath) .. " since it had no matching moon file")     end   end end
+      if verbose then
+        Output("Deleted file " .. tostring(filePath) .. " since it had no matching moon file")       end     end   end end
 
 local shouldCompileMoonFile shouldCompileMoonFile = function(moonPath, luaPath)
   if not File.exists(luaPath) then
@@ -82,10 +61,9 @@ local shouldCompileMoonFile shouldCompileMoonFile = function(moonPath, luaPath)
   return moonTime > luaTime end
 
 local compileMoon compileMoon = function(moonPath, luaPath)
-  os.execute("moonc -o \"" .. tostring(luaPath) .. "\" -n \"" .. tostring(moonPath) .. "\"")
-  return Output("Compiled file " .. tostring(moonPath)) end
+  return os.execute("moonc -o \"" .. tostring(luaPath) .. "\" -n \"" .. tostring(moonPath) .. "\"") end
 
-local MoonScriptCompiler = {   compile = function()
+local MoonScriptCompiler = {   compile = function(verbose)
 
     local rtp = vim.api.nvim_eval('&rtp')     local paths     do       local _accum_0 = { }       local _len_0 = 1
       for x in string.gmatch(rtp, "([^,]+)") do         _accum_0[_len_0] = Path.normalize(x)         _len_0 = _len_0 + 1       end       paths = _accum_0     end
@@ -102,7 +80,7 @@ local MoonScriptCompiler = {   compile = function()
         table.insert(moonBaseNames, baseName)       end
 
       if #moonBaseNames > 0 then
-        deleteOrphanedLuaFiles(moonBaseNames, pluginRoot)
+        deleteOrphanedLuaFiles(moonBaseNames, pluginRoot, verbose)
 
         local luaDir = Path.join(pluginRoot, 'lua')
 
@@ -113,13 +91,18 @@ local MoonScriptCompiler = {   compile = function()
           if shouldCompileMoonFile(moonPath, luaPath) then
             compileMoon(moonPath, luaPath)
 
+            if verbose then
+              Output("Compiled file " .. tostring(moonPath))             end
+
 
 
             package.loaded[baseName] = nil
-            numUpdated = numUpdated + 1           end         end       end     end   end }
+            numUpdated = numUpdated + 1           end         end       end     end
 
+    if verbose and numUpdated == 0 then
+      Output("All moon files are already up to date")     end
 
-
+    return numUpdated   end }
 
 return MoonScriptCompiler
 

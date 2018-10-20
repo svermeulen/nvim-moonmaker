@@ -1,6 +1,4 @@
 
-local Path
-
 Output = (message) ->
   vim.api.nvim_command("echom '#{message}'")
 
@@ -23,17 +21,6 @@ Path =
 
     return result
 
-  getExtension: (path) ->
-    return path\match('%.([^%.]*)$')
-
-  removeExtension: (fileName) ->
-    extension = Path.getExtension(fileName)
-
-    if extension == nil
-      return fileName
-
-    return fileName\sub(0, #fileName - #extension - 1)
-
 File =
   exists: (path) ->
     return io.open(path, 'r') != nil
@@ -41,18 +28,9 @@ File =
   getModificationTime: (path) ->
     return vim.api.nvim_call_function('getftime', {path})
 
-  getFileName: (path) ->
-    return path\match('[\\/]([^\\/]*)$')
-
 Directory =
   getAllFilesWithExtensionRecursive: (path, extension) ->
     return [Path.normalize(x) for x in *vim.api.nvim_call_function('globpath', {path, "**/*.#{extension}", 0, 1})]
-
-  getDirectoriesAndFiles: (path) ->
-    return [Path.normalize(x) for x in *vim.api.nvim_call_function('globpath', {path, "*", 0, 1})]
-
-  getFilesWithExtension: (path, extension) ->
-    return [Path.normalize(x) for x in *vim.api.nvim_call_function('globpath', {path, "*.#{extension}", 0, 1})]
 
 tableContains = (table, element) ->
   for value in *table
@@ -61,7 +39,7 @@ tableContains = (table, element) ->
 
   return false
 
-deleteOrphanedLuaFiles = (validBaseNames, pluginRoot) ->
+deleteOrphanedLuaFiles = (validBaseNames, pluginRoot, verbose) ->
   luaDir = Path.join(pluginRoot, 'lua')
 
   for filePath in *Directory.getAllFilesWithExtensionRecursive(luaDir, 'lua')
@@ -70,7 +48,8 @@ deleteOrphanedLuaFiles = (validBaseNames, pluginRoot) ->
 
     if not tableContains(validBaseNames, baseName)
       os.remove(fullPath)
-      Output("Deleted file #{filePath} since it had no matching moon file")
+      if verbose
+        Output("Deleted file #{filePath} since it had no matching moon file")
 
 shouldCompileMoonFile = (moonPath, luaPath) ->
   if not File.exists(luaPath)
@@ -83,10 +62,9 @@ shouldCompileMoonFile = (moonPath, luaPath) ->
 
 compileMoon = (moonPath, luaPath) ->
   os.execute("moonc -o \"#{luaPath}\" -n \"#{moonPath}\"")
-  Output("Compiled file #{moonPath}")
 
 MoonScriptCompiler =
-  compile: ->
+  compile: (verbose) ->
     rtp = vim.api.nvim_eval('&rtp')
     paths = [Path.normalize(x) for x in string.gmatch(rtp, "([^,]+)")]
 
@@ -102,7 +80,7 @@ MoonScriptCompiler =
         table.insert(moonBaseNames, baseName)
 
       if #moonBaseNames > 0
-        deleteOrphanedLuaFiles(moonBaseNames, pluginRoot)
+        deleteOrphanedLuaFiles(moonBaseNames, pluginRoot, verbose)
 
         luaDir = Path.join(pluginRoot, 'lua')
 
@@ -113,12 +91,17 @@ MoonScriptCompiler =
           if shouldCompileMoonFile(moonPath, luaPath)
             compileMoon(moonPath, luaPath)
 
+            if verbose
+              Output("Compiled file #{moonPath}")
+
             -- Also delete it from the package cache so the next time require(baseName)
             -- is called, it will load the new file
             package.loaded[baseName] = nil
             numUpdated += 1
 
-    --if numUpdated == 0
-      --Output("Compiled #{numUpdated} moon files")
+    if verbose and numUpdated == 0
+      Output("All moon files are already up to date")
+
+    return numUpdated
 
 return MoonScriptCompiler
