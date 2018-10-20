@@ -6,7 +6,7 @@ This plugin adds support for writing moonscript plugins much more easily in Neov
 Install via vim-plug by adding this to your init.vim.
 
 ```
-Plug 'svermeulen/nvim-moonscript-plugin-example'
+Plug 'svermeulen/nvim-moonscript-plugin-support'
 ```
 
 Then all you need to do is place `.moon` files in a 'moon' directory inside any plugin directory that is on the vim `&runtimepath`.  This follows the same convention that Neovim uses for other file types.  Neovim supports python and lua out of the box by expecting them to be placed in `'&rtp/lua'` and `&rtp/python3` directories, however, despite early plans to support MoonScript, this was never added (hence this plugin).
