@@ -23,4 +23,4 @@ More things to be aware of:
 - When you are actually ready to distribute your plugin, you don't need to depend on this plugin, since you can just include the compiled lua files
 - You need to install moonscript for this to work.  The `moonc` executable needs to be on the PATH.
 - If your plugin contains multiple moon files and you want to avoid polluting the root require path, you can put your moon files into subdirectories underneath the moon folder.  Then you can use `require("dir1.dir2.filename")` to use them from other moonscript files
-
+- Make sure to place this plugin earlier in the list of plugins with whatever plugin manager you're using, so that the lua files will be compiled as soon as possible.  This would be important if you're calling lua code during startup from one of your own plugins.
