@@ -1,7 +1,8 @@
 
-local Path
-
 Vim =
+  eval: (vimL) ->
+    return vim.api.nvim_eval(vimL)
+
   echo: (message) ->
     vim.api.nvim_out_write(message .. '\n')
 
@@ -18,6 +19,7 @@ Assert = (condition, message) ->
     else
       error("Assert hit!")
 
+local Path
 Path =
   join: (left, right) ->
     result = left
@@ -75,7 +77,7 @@ deleteOrphanedLuaFiles = (validBaseNames, pluginRoot, verbose) ->
     if not tableContains(validBaseNames, baseName)
       File.delete(filePath)
       if verbose
-        vim.api.nvim_command("echo 'Deleted file #{filePath} since it had no matching moon file'")
+        Vim.echo("Deleted file '#{filePath}' since it had no matching moon file")
 
 timeStampIsGreater = (file1Path, file2Path) ->
     time1 = File.getModificationTime(file1Path)
@@ -92,10 +94,9 @@ MoonMaker =
       Path.makeMissingDirectoriesInPath(luaPath)
       output = Vim.callFunction("system", { "moonc -o \"#{luaPath}\" -n \"#{moonPath}\"" })
 
-      if vim.api.nvim_eval('v:shell_error') != 0
+      if Vim.eval('v:shell_error') != 0
         Vim.echoError("Errors occurred while compiling file '#{moonPath}'")
         Vim.echoError(output)
-        -- Can we safely print the output here?
         return false
 
       return true
@@ -103,7 +104,7 @@ MoonMaker =
     return false
 
   compileAll: (verbose) ->
-    rtp = vim.api.nvim_eval('&rtp')
+    rtp = Vim.eval('&rtp')
     paths = [Path.normalize(x) for x in string.gmatch(rtp, "([^,]+)")]
 
     numUpdated = 0
@@ -128,7 +129,7 @@ MoonMaker =
 
           if MoonMaker.compileMoonIfOutOfDate(moonPath, luaPath)
             if verbose
-              vim.api.nvim_command("echo 'Compiled file #{moonPath}'")
+              Vim.echo("Compiled file '#{moonPath}'")
 
             -- Also delete it from the package cache so the next time require(baseName)
             -- is called, it will load the new file
@@ -137,7 +138,7 @@ MoonMaker =
             numUpdated += 1
 
     if verbose and numUpdated == 0
-      vim.api.nvim_command("echo 'All moon files are already up to date'")
+      Vim.echo("All moon files are already up to date")
 
     return numUpdated
 

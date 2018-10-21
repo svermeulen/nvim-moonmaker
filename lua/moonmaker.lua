@@ -1,7 +1,8 @@
 
-local Path
+local Vim = {   eval = function(vimL)
 
-local Vim = {   echo = function(message)
+    return vim.api.nvim_eval(vimL)   end,   echo = function(message)
+
 
     return vim.api.nvim_out_write(message .. '\n')   end,   echoError = function(message)
 
@@ -18,6 +19,7 @@ local Assert Assert = function(condition, message)
 
       return error("Assert hit!")     end   end end
 
+local Path
 Path = {   join = function(left, right)
 
     local result = left
@@ -75,7 +77,7 @@ local deleteOrphanedLuaFiles deleteOrphanedLuaFiles = function(validBaseNames, p
     if not tableContains(validBaseNames, baseName) then
       File.delete(filePath)
       if verbose then
-        vim.api.nvim_command("echo 'Deleted file " .. tostring(filePath) .. " since it had no matching moon file'")       end     end   end end
+        Vim.echo("Deleted file '" .. tostring(filePath) .. "' since it had no matching moon file")       end     end   end end
 
 local timeStampIsGreater timeStampIsGreater = function(file1Path, file2Path)
   local time1 = File.getModificationTime(file1Path)
@@ -92,10 +94,9 @@ MoonMaker = {   compileMoonIfOutOfDate = function(moonPath, luaPath)
       Path.makeMissingDirectoriesInPath(luaPath)
       local output = Vim.callFunction("system", {         "moonc -o \"" .. tostring(luaPath) .. "\" -n \"" .. tostring(moonPath) .. "\""       })
 
-      if vim.api.nvim_eval('v:shell_error') ~= 0 then
+      if Vim.eval('v:shell_error') ~= 0 then
         Vim.echoError("Errors occurred while compiling file '" .. tostring(moonPath) .. "'")
         Vim.echoError(output)
-
         return false       end
 
       return true     end
@@ -103,7 +104,7 @@ MoonMaker = {   compileMoonIfOutOfDate = function(moonPath, luaPath)
     return false   end,   compileAll = function(verbose)
 
 
-    local rtp = vim.api.nvim_eval('&rtp')     local paths     do       local _accum_0 = { }       local _len_0 = 1
+    local rtp = Vim.eval('&rtp')     local paths     do       local _accum_0 = { }       local _len_0 = 1
       for x in string.gmatch(rtp, "([^,]+)") do         _accum_0[_len_0] = Path.normalize(x)         _len_0 = _len_0 + 1       end       paths = _accum_0     end
 
     local numUpdated = 0
@@ -128,7 +129,7 @@ MoonMaker = {   compileMoonIfOutOfDate = function(moonPath, luaPath)
 
           if MoonMaker.compileMoonIfOutOfDate(moonPath, luaPath) then
             if verbose then
-              vim.api.nvim_command("echo 'Compiled file " .. tostring(moonPath) .. "'")             end
+              Vim.echo("Compiled file '" .. tostring(moonPath) .. "'")             end
 
 
 
@@ -137,7 +138,7 @@ MoonMaker = {   compileMoonIfOutOfDate = function(moonPath, luaPath)
             numUpdated = numUpdated + 1           end         end       end     end
 
     if verbose and numUpdated == 0 then
-      vim.api.nvim_command("echo 'All moon files are already up to date'")     end
+      Vim.echo("All moon files are already up to date")     end
 
     return numUpdated   end }
 
