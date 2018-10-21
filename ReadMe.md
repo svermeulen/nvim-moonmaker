@@ -1,7 +1,9 @@
 
 ## MoonMaker
 
-This plugin adds support for writing moonscript plugins much more easily in Vim
+<img align="right" width="268" height="214" src="https://i.imgur.com/gCDNsfH.png">
+
+This plugin adds support for writing moonscript plugins in Neovim
 
 Install via vim-plug by adding this to your init.vim.
 
