@@ -1,4 +1,11 @@
 
+Assert = (condition, message) ->
+  if not condition
+    if message
+      error("Assert hit! " .. message)
+    else
+      error("Assert hit!")
+
 Path =
   join: (left, right) ->
     result = left
@@ -105,7 +112,8 @@ MoonScriptCompiler =
 
             -- Also delete it from the package cache so the next time require(baseName)
             -- is called, it will load the new file
-            package.loaded[baseName] = nil
+            packageName = baseName\gsub("\\", ".")\gsub("/", ".")
+            package.loaded[packageName] = nil
             numUpdated += 1
 
     if verbose and numUpdated == 0

@@ -1,4 +1,11 @@
 
+local Assert Assert = function(condition, message)
+  if not condition then
+    if message then
+      return error("Assert hit! " .. message)     else
+
+      return error("Assert hit!")     end   end end
+
 local Path = {   join = function(left, right)
 
     local result = left
@@ -105,7 +112,8 @@ local MoonScriptCompiler = {   compile = function(verbose)
 
 
 
-            package.loaded[baseName] = nil
+            local packageName = baseName:gsub("\\", "."):gsub("/", ".")
+            package.loaded[packageName] = nil
             numUpdated = numUpdated + 1           end         end       end     end
 
     if verbose and numUpdated == 0 then
