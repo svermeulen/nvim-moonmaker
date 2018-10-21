@@ -1,9 +1,9 @@
 
 function! MoonScriptCompiler#Compile(verbose)
     if a:verbose
-        lua require("MoonScriptCompiler").compile(true)
+        lua require("MoonScriptCompiler").compileAll(true)
     else
-        lua require("MoonScriptCompiler").compile(false)
+        lua require("MoonScriptCompiler").compileAll(false)
     endif
 endfunction
 

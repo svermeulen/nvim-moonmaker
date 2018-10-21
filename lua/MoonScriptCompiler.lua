@@ -1,4 +1,16 @@
 
+local Path
+
+local Vim = {   echo = function(message)
+
+    return vim.api.nvim_out_write(message .. '\n')   end,   echoError = function(message)
+
+
+    return vim.api.nvim_err_writeln(message)   end,   callFunction = function(functionName, args)
+
+
+    return vim.api.nvim_call_function(functionName, args)   end }
+
 local Assert Assert = function(condition, message)
   if not condition then
     if message then
@@ -6,7 +18,7 @@ local Assert Assert = function(condition, message)
 
       return error("Assert hit!")     end   end end
 
-local Path = {   join = function(left, right)
+Path = {   join = function(left, right)
 
     local result = left
     local lastChar = left:sub(-1)
@@ -23,24 +35,28 @@ local Path = {   join = function(left, right)
     if result:sub(-1) == '/' then
       result = result:sub(0, #result - 1)     end
 
-    return result   end,   getDirectory = function(path)
+    return result   end,   makeMissingDirectoriesInPath = function(path)
+
+
+    local dirPath = Path.getDirectory(path)
+    return Vim.callFunction('mkdir', {       dirPath,       'p'     })   end,   getDirectory = function(path)
 
 
     return path:match('^(.*)[\\/][^\\/]*$')   end }
 
 local File = {   exists = function(path)
 
-    return io.open(path, 'r') ~= nil   end,   getModificationTime = function(path)
+    return Vim.callFunction('filereadable', {       path     }) ~= 0   end,   getModificationTime = function(path)
 
 
-    return vim.api.nvim_call_function('getftime', {       path     })   end,   delete = function(path)
+    return Vim.callFunction('getftime', {       path     })   end,   delete = function(path)
 
 
-    return vim.api.nvim_call_function('delete', {       path     })   end }
+    return Vim.callFunction('delete', {       path     })   end }
 
 local Directory = {   getAllFilesWithExtensionRecursive = function(path, extension)     local _accum_0 = { }     local _len_0 = 1
 
-    local _list_0 = vim.api.nvim_call_function('globpath', {       path,       "**/*." .. tostring(extension),       0,       1     })     for _index_0 = 1, #_list_0 do       local x = _list_0[_index_0]       _accum_0[_len_0] = Path.normalize(x)       _len_0 = _len_0 + 1     end     return _accum_0   end }
+    local _list_0 = Vim.callFunction('globpath', {       path,       "**/*." .. tostring(extension),       0,       1     })     for _index_0 = 1, #_list_0 do       local x = _list_0[_index_0]       _accum_0[_len_0] = Path.normalize(x)       _len_0 = _len_0 + 1     end     return _accum_0   end }
 
 local tableContains tableContains = function(table, element)
   for _index_0 = 1, #table do     local value = table[_index_0]
@@ -61,25 +77,31 @@ local deleteOrphanedLuaFiles deleteOrphanedLuaFiles = function(validBaseNames, p
       if verbose then
         vim.api.nvim_command("echo 'Deleted file " .. tostring(filePath) .. " since it had no matching moon file'")       end     end   end end
 
-local shouldCompileMoonFile shouldCompileMoonFile = function(moonPath, luaPath)
-  if not File.exists(luaPath) then
-    return true   end
+local timeStampIsGreater timeStampIsGreater = function(file1Path, file2Path)
+  local time1 = File.getModificationTime(file1Path)
+  local time2 = File.getModificationTime(file2Path)
 
-  local luaTime = File.getModificationTime(luaPath)
-  local moonTime = File.getModificationTime(moonPath)
+  return time1 > time2 end
 
-  return moonTime > luaTime end
-
-local compileMoon compileMoon = function(moonPath, luaPath)
-  local dirPath = Path.getDirectory(luaPath)
-  vim.api.nvim_command("call mkdir('" .. tostring(dirPath) .. "', 'p')")
-  local output = vim.api.nvim_call_function("system", {     "moonc -o \"" .. tostring(luaPath) .. "\" -n \"" .. tostring(moonPath) .. "\""   })
-
-  if vim.api.nvim_eval('v:shell_error') ~= 0 then
-    return vim.api.nvim_command("echoerr 'Errors occurred when executing moonc for file \"" .. tostring(moonPath) .. "\"'")   end end
+local MoonScriptCompiler
+MoonScriptCompiler = {   compileMoonIfOutOfDate = function(moonPath, luaPath)
 
 
-local MoonScriptCompiler = {   compile = function(verbose)
+
+    if not File.exists(luaPath) or timeStampIsGreater(moonPath, luaPath) then
+      Path.makeMissingDirectoriesInPath(luaPath)
+      local output = Vim.callFunction("system", {         "moonc -o \"" .. tostring(luaPath) .. "\" -n \"" .. tostring(moonPath) .. "\""       })
+
+      if vim.api.nvim_eval('v:shell_error') ~= 0 then
+        Vim.echoError("Errors occurred while compiling file '" .. tostring(moonPath) .. "'")
+        Vim.echoError(output)
+
+        return false       end
+
+      return true     end
+
+    return false   end,   compileAll = function(verbose)
+
 
     local rtp = vim.api.nvim_eval('&rtp')     local paths     do       local _accum_0 = { }       local _len_0 = 1
       for x in string.gmatch(rtp, "([^,]+)") do         _accum_0[_len_0] = Path.normalize(x)         _len_0 = _len_0 + 1       end       paths = _accum_0     end
@@ -104,9 +126,7 @@ local MoonScriptCompiler = {   compile = function(verbose)
           local luaPath = Path.join(luaDir, baseName) .. '.lua'
           local moonPath = Path.join(moonDir, baseName) .. '.moon'
 
-          if shouldCompileMoonFile(moonPath, luaPath) then
-            compileMoon(moonPath, luaPath)
-
+          if MoonScriptCompiler.compileMoonIfOutOfDate(moonPath, luaPath) then
             if verbose then
               vim.api.nvim_command("echo 'Compiled file " .. tostring(moonPath) .. "'")             end
 
