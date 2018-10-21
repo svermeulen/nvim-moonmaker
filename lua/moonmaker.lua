@@ -83,8 +83,8 @@ local timeStampIsGreater timeStampIsGreater = function(file1Path, file2Path)
 
   return time1 > time2 end
 
-local MoonScriptCompiler
-MoonScriptCompiler = {   compileMoonIfOutOfDate = function(moonPath, luaPath)
+local MoonMaker
+MoonMaker = {   compileMoonIfOutOfDate = function(moonPath, luaPath)
 
 
 
@@ -126,7 +126,7 @@ MoonScriptCompiler = {   compileMoonIfOutOfDate = function(moonPath, luaPath)
           local luaPath = Path.join(luaDir, baseName) .. '.lua'
           local moonPath = Path.join(moonDir, baseName) .. '.moon'
 
-          if MoonScriptCompiler.compileMoonIfOutOfDate(moonPath, luaPath) then
+          if MoonMaker.compileMoonIfOutOfDate(moonPath, luaPath) then
             if verbose then
               vim.api.nvim_command("echo 'Compiled file " .. tostring(moonPath) .. "'")             end
 
@@ -141,5 +141,5 @@ MoonScriptCompiler = {   compileMoonIfOutOfDate = function(moonPath, luaPath)
 
     return numUpdated   end }
 
-return MoonScriptCompiler
+return MoonMaker
 

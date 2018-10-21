@@ -83,8 +83,8 @@ timeStampIsGreater = (file1Path, file2Path) ->
 
     return time1 > time2
 
-local MoonScriptCompiler
-MoonScriptCompiler =
+local MoonMaker
+MoonMaker =
   -- Returns true if it was compiled
   compileMoonIfOutOfDate: (moonPath, luaPath) ->
 
@@ -126,7 +126,7 @@ MoonScriptCompiler =
           luaPath = Path.join(luaDir, baseName) .. '.lua'
           moonPath = Path.join(moonDir, baseName) .. '.moon'
 
-          if MoonScriptCompiler.compileMoonIfOutOfDate(moonPath, luaPath)
+          if MoonMaker.compileMoonIfOutOfDate(moonPath, luaPath)
             if verbose
               vim.api.nvim_command("echo 'Compiled file #{moonPath}'")
 
@@ -141,4 +141,4 @@ MoonScriptCompiler =
 
     return numUpdated
 
-return MoonScriptCompiler
+return MoonMaker

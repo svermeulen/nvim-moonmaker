@@ -1,12 +1,12 @@
 
-## Moonscript Plugin Support
+## MoonMaker
 
 This plugin adds support for writing moonscript plugins much more easily in Vim
 
 Install via vim-plug by adding this to your init.vim.
 
 ```
-Plug 'svermeulen/nvim-moonscript-plugin-support'
+Plug 'svermeulen/nvim-moonmaker'
 ```
 
 Then all you need to do is place `.moon` files in a 'moon' directory inside any plugin directory that is on the vim `&runtimepath` and they will automatically compiled and available to be loaded.
@@ -21,9 +21,14 @@ Compilation occurs at Neovim startup or whenever manually executed by one of the
 
 You can then use the lua `require()` method to lazily load and call your lua code from vim script or from other moonscript/lua files.
 
-See [here](https://github.com/svermeulen/nvim-moonscript-plugin-example) for an simple example.
+See [here](https://github.com/svermeulen/nvim-moonmaker-example) for an simple example.
 
-After editting your moon files, you can update them manually by calling the command `:CompileMoonScript`.  You can also add a binding by doing something like `nmap <leader>cm <plug>(CompileMoonScript)` in your `init.vim`.  After manually calling one of these, if any `.moon` files in any plugin directory are out of date, they will be compiled.  The require cache for each updated lua file will also be cleared so that the next time you call require you will get the latest version.
+After editting your moon files, you can update them manually by any of the following methods:
+- Calling the command `:MoonCompile`
+- Binding something to `<plug>(MoonCompile)` (eg: `nmap <leader>cm <plug>(MoonCompile)`)
+- Calling `moonmaker#compile()` from VimL
+
+After manually calling one of these, if any `.moon` files in any plugin directory are out of date, they will be compiled.  The require cache for each updated lua file will also be cleared so that the next time you call require you will get the latest version.
 
 More things to be aware of:
 - When you are actually ready to distribute your plugin, you don't need to depend on this plugin, since you can just include the compiled lua files
