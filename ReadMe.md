@@ -33,6 +33,7 @@ After editting your moon files, you can update them manually by any of the follo
 After manually calling one of these, if any `.moon` files in any plugin directory are out of date, they will be compiled.  The require cache for each updated lua file will also be cleared so that the next time you call require you will get the latest version.
 
 More things to be aware of:
+- If you want to execute some moonscript code you can use the included `:Moon` command.  For example:  `:Moon print('hello')` or `:Moon require('Foo').doThing!`
 - When you are actually ready to distribute your plugin, you don't need to depend on this plugin, since you can just include the compiled lua files
 - You need to install moonscript for this to work.  The `moonc` executable needs to be on the PATH.
 - If your plugin contains multiple moon files and you want to avoid polluting the root require path, you can put your moon files into subdirectories underneath the moon folder.  Then you can use `require("dir1.dir2.filename")` to use them from other moonscript files
