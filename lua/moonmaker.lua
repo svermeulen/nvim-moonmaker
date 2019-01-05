@@ -94,7 +94,7 @@ local timeStampIsGreater timeStampIsGreater = function(file1Path, file2Path)
 
       if not File.exists(luaPath) or timeStampIsGreater(moonPath, luaPath) then
         Path.makeMissingDirectoriesInPath(luaPath)
-        local output = Vim.callFunction("system", {           "moonc -o \"" .. tostring(luaPath) .. "\" -n \"" .. tostring(moonPath) .. "\""         })
+        local output = Vim.callFunction("system", {           "moonc -o \"" .. tostring(luaPath) .. "\" \"" .. tostring(moonPath) .. "\""         })
 
         if Vim.eval('v:shell_error') ~= 0 then
           Vim.echoError("Errors occurred while compiling file '" .. tostring(moonPath) .. "'")
