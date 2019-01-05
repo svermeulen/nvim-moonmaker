@@ -1,5 +1,5 @@
 
-Vim =
+class Vim
   eval: (vimL) ->
     return vim.api.nvim_eval(vimL)
 
@@ -19,8 +19,7 @@ Assert = (condition, message) ->
     else
       error("Assert hit!")
 
-local Path
-Path =
+class Path
   join: (left, right) ->
     result = left
     lastChar = left\sub(-1)
@@ -46,7 +45,7 @@ Path =
   getDirectory: (path) ->
     return path\match('^(.*)[\\/][^\\/]*$')
 
-File =
+class File
   exists: (path) ->
     return Vim.callFunction('filereadable', { path }) != 0
 
@@ -56,7 +55,7 @@ File =
   delete: (path) ->
     Vim.callFunction('delete', { path })
 
-Directory =
+class Directory
   getAllFilesWithExtensionRecursive: (path, extension) ->
     return [Path.normalize(x) for x in *Vim.callFunction('globpath', {path, "**/*.#{extension}", 0, 1})]
 
@@ -85,8 +84,11 @@ timeStampIsGreater = (file1Path, file2Path) ->
 
     return time1 > time2
 
-local MoonMaker
-MoonMaker =
+class MoonMaker
+  executeMoon: (moonText) ->
+    luaText = Vim.callFunction("system", { "moonc --", moonText })
+    loadstring(luaText)!
+
   -- Returns true if it was compiled
   compileMoonIfOutOfDate: (moonPath, luaPath) ->
 
@@ -142,4 +144,3 @@ MoonMaker =
 
     return numUpdated
 
-return MoonMaker
