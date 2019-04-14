@@ -94,7 +94,7 @@ class MoonMaker
 
     if not File.exists(luaPath) or timeStampIsGreater(moonPath, luaPath)
       Path.makeMissingDirectoriesInPath(luaPath)
-      output = Vim.callFunction("system", { "moonc -o \"#{luaPath}\" \"#{moonPath}\"" })
+      output = Vim.callFunction("system", { "moonc -n -o \"#{luaPath}\" \"#{moonPath}\"" })
 
       if Vim.eval('v:shell_error') != 0
         Vim.echoError("Errors occurred while compiling file '#{moonPath}'")
