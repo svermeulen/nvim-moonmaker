@@ -172,8 +172,7 @@ tableContains = function(table, element)
   return false
 end
 local deleteOrphanedLuaFiles
-deleteOrphanedLuaFiles = function(validBaseNames, pluginRoot, verbose)
-  local luaDir = Path.join(pluginRoot, 'lua')
+deleteOrphanedLuaFiles = function(validBaseNames, luaDir, verbose)
   local _list_0 = Directory.getAllFilesWithExtensionRecursive(luaDir, 'lua')
   for _index_0 = 1, #_list_0 do
     local filePath = _list_0[_index_0]
@@ -207,8 +206,12 @@ do
     compileMoonIfOutOfDate = function(moonPath, luaPath)
       if not File.exists(luaPath) or timeStampIsGreater(moonPath, luaPath) then
         Path.makeMissingDirectoriesInPath(luaPath)
+        local preserveLineNumbersFlag = '-n'
+        if Vim.eval('get(g:, "MoonMakerPreserveLineNumbers", 1)') == 0 then
+          preserveLineNumbersFlag = ''
+        end
         local output = Vim.callFunction("system", {
-          "moonc -n -o \"" .. tostring(luaPath) .. "\" \"" .. tostring(moonPath) .. "\""
+          "moonc " .. tostring(preserveLineNumbersFlag) .. " -o \"" .. tostring(luaPath) .. "\" \"" .. tostring(moonPath) .. "\""
         })
         if Vim.eval('v:shell_error') ~= 0 then
           Vim.echoError("Errors occurred while compiling file '" .. tostring(moonPath) .. "'")
@@ -218,6 +221,34 @@ do
         return true
       end
       return false
+    end,
+    compileDir = function(moonDir, luaDir)
+      local numUpdated = 0
+      local moonBaseNames = { }
+      local _list_0 = Directory.getAllFilesWithExtensionRecursive(moonDir, 'moon')
+      for _index_0 = 1, #_list_0 do
+        local filePath = _list_0[_index_0]
+        local baseName = filePath:sub(#moonDir + 2)
+        baseName = baseName:sub(0, #baseName - 5)
+        table.insert(moonBaseNames, baseName)
+      end
+      if #moonBaseNames > 0 then
+        deleteOrphanedLuaFiles(moonBaseNames, luaDir, verbose)
+        for _index_0 = 1, #moonBaseNames do
+          local baseName = moonBaseNames[_index_0]
+          local luaPath = Path.join(luaDir, baseName) .. '.lua'
+          local moonPath = Path.join(moonDir, baseName) .. '.moon'
+          if MoonMaker.compileMoonIfOutOfDate(moonPath, luaPath) then
+            if verbose then
+              Vim.echo("Compiled file '" .. tostring(moonPath) .. "'")
+            end
+            local packageName = baseName:gsub("\\", "."):gsub("/", ".")
+            package.loaded[packageName] = nil
+            numUpdated = numUpdated + 1
+          end
+        end
+      end
+      return numUpdated
     end,
     compileAll = function(verbose)
       local rtp = Vim.eval('&rtp')
@@ -234,32 +265,9 @@ do
       local numUpdated = 0
       for _index_0 = 1, #paths do
         local pluginRoot = paths[_index_0]
-        local moonBaseNames = { }
         local moonDir = Path.join(pluginRoot, 'moon')
-        local _list_0 = Directory.getAllFilesWithExtensionRecursive(moonDir, 'moon')
-        for _index_1 = 1, #_list_0 do
-          local filePath = _list_0[_index_1]
-          local baseName = filePath:sub(#moonDir + 2)
-          baseName = baseName:sub(0, #baseName - 5)
-          table.insert(moonBaseNames, baseName)
-        end
-        if #moonBaseNames > 0 then
-          deleteOrphanedLuaFiles(moonBaseNames, pluginRoot, verbose)
-          local luaDir = Path.join(pluginRoot, 'lua')
-          for _index_1 = 1, #moonBaseNames do
-            local baseName = moonBaseNames[_index_1]
-            local luaPath = Path.join(luaDir, baseName) .. '.lua'
-            local moonPath = Path.join(moonDir, baseName) .. '.moon'
-            if MoonMaker.compileMoonIfOutOfDate(moonPath, luaPath) then
-              if verbose then
-                Vim.echo("Compiled file '" .. tostring(moonPath) .. "'")
-              end
-              local packageName = baseName:gsub("\\", "."):gsub("/", ".")
-              package.loaded[packageName] = nil
-              numUpdated = numUpdated + 1
-            end
-          end
-        end
+        local luaDir = Path.join(pluginRoot, 'lua')
+        numUpdated = numUpdated + MoonMaker.compileDir(moonDir, luaDir)
       end
       if verbose and numUpdated == 0 then
         Vim.echo("All moon files are already up to date")
