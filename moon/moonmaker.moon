@@ -1,88 +1,27 @@
 
-class Vim
-  eval: (vimL) ->
-    return vim.api.nvim_eval(vimL)
-
-  echo: (message) ->
-    vim.api.nvim_out_write(message .. '\n')
-
-  echoError: (message) ->
-    vim.api.nvim_err_writeln(message)
-
-  callFunction: (functionName, args) ->
-    vim.api.nvim_call_function(functionName, args)
-
-Assert = (condition, message) ->
-  if not condition
-    if message
-      error("Assert hit! " .. message)
-    else
-      error("Assert hit!")
-
-class Path
-  join: (left, right) ->
-    result = left
-    lastChar = left\sub(-1)
-
-    if lastChar != '/' and lastChar != '\\'
-      result ..= '/'
-
-    result ..= right
-    return result
-
-  normalize: (path) ->
-    result = string.gsub(path, "\\", "/")
-
-    if result\sub(-1) == '/'
-      result = result\sub(0, #result - 1)
-
-    return result
-
-  makeMissingDirectoriesInPath: (path) ->
-    dirPath = Path.getDirectory(path)
-    Vim.callFunction('mkdir', { dirPath, 'p' })
-
-  getDirectory: (path) ->
-    return path\match('^(.*)[\\/][^\\/]*$')
-
-class File
-  exists: (path) ->
-    return Vim.callFunction('filereadable', { path }) != 0
-
-  getModificationTime: (path) ->
-    return Vim.callFunction('getftime', { path })
-
-  delete: (path) ->
-    Vim.callFunction('delete', { path })
-
-class Directory
-  getAllFilesWithExtensionRecursive: (path, extension) ->
-    return [Path.normalize(x) for x in *Vim.callFunction('globpath', {path, "**/*.#{extension}", 0, 1})]
-
-tableContains = (table, element) ->
-  for value in *table
-    if value == element then
-      return true
-
-  return false
-
-deleteOrphanedLuaFiles = (validBaseNames, luaDir, verbose) ->
-  for filePath in *Directory.getAllFilesWithExtensionRecursive(luaDir, 'lua')
-    baseName = filePath\sub(#luaDir + 2)
-    baseName = baseName\sub(0, #baseName - 4)
-
-    if not tableContains(validBaseNames, baseName)
-      File.delete(filePath)
-      if verbose
-        Vim.echo("Deleted file '#{filePath}' since it had no matching moon file")
-
-timeStampIsGreater = (file1Path, file2Path) ->
-    time1 = File.getModificationTime(file1Path)
-    time2 = File.getModificationTime(file2Path)
-
-    return time1 > time2
+Directory = require("moonmaker.internal.Directory")
+Vim = require("moonmaker.internal.Vim")
+Path = require("moonmaker.internal.Path")
+File = require("moonmaker.internal.File")
+Util = require("moonmaker.internal.Util")
 
 class MoonMaker
+  _deleteOrphanedLuaFiles: (validBaseNames, luaDir, verbose) ->
+    for filePath in *Directory.getAllFilesWithExtensionRecursive(luaDir, 'lua')
+      baseName = filePath\sub(#luaDir + 2)
+      baseName = baseName\sub(0, #baseName - 4)
+
+      if not Util.tableContains(validBaseNames, baseName)
+        File.delete(filePath)
+        if verbose
+          Vim.echo("Deleted file '#{filePath}' since it had no matching moon file")
+
+  _timeStampIsGreater: (file1Path, file2Path) ->
+      time1 = File.getModificationTime(file1Path)
+      time2 = File.getModificationTime(file2Path)
+
+      return time1 > time2
+
   executeMoon: (moonText) ->
     luaText = Vim.callFunction("system", { "moonc --", moonText })
     loadstring(luaText)!
@@ -90,7 +29,7 @@ class MoonMaker
   -- Returns true if it was compiled
   compileMoonIfOutOfDate: (moonPath, luaPath) ->
 
-    if not File.exists(luaPath) or timeStampIsGreater(moonPath, luaPath)
+    if not File.exists(luaPath) or MoonMaker._timeStampIsGreater(moonPath, luaPath)
       Path.makeMissingDirectoriesInPath(luaPath)
       output = Vim.callFunction("system", { "moonc -o \"#{luaPath}\" \"#{moonPath}\"" })
 
@@ -113,7 +52,7 @@ class MoonMaker
       table.insert(moonBaseNames, baseName)
 
     if #moonBaseNames > 0
-      deleteOrphanedLuaFiles(moonBaseNames, luaDir, verbose)
+      MoonMaker._deleteOrphanedLuaFiles(moonBaseNames, luaDir, verbose)
 
       for baseName in *moonBaseNames
         luaPath = Path.join(luaDir, baseName) .. '.lua'
