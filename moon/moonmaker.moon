@@ -68,13 +68,31 @@ tableContains = (table, element) ->
 
 deleteOrphanedLuaFiles = (validBaseNames, luaDir, verbose) ->
   for filePath in *Directory.getAllFilesWithExtensionRecursive(luaDir, 'lua')
-    baseName = filePath\sub(#luaDir + 2)
-    baseName = baseName\sub(0, #baseName - 4)
+    luaRelativePath = filePath\sub(#luaDir + 2)
+    baseName = luaRelativePath\sub(0, #luaRelativePath - 4)
 
-    if not tableContains(validBaseNames, baseName)
-      File.delete(filePath)
-      if verbose
-        Vim.echo("Deleted file '#{filePath}' since it had no matching moon file")
+    if tableContains(validBaseNames, baseName)
+      continue
+
+    alwaysDelete = false
+    if vim.api.nvim_call_function('exists', {'MoonMakerDeleteOrphanedLuaFiles'}) == 1
+      alwaysDelete = vim.api.nvim_get_var('MoonMakerDeleteOrphanedLuaFiles')
+
+    if not alwaysDelete
+      choice = vim.api.nvim_call_function(
+        "confirm", { "Lua file at '#{luaRelativePath}' does not have a corresponding Moon file. Delete it?\nNote that this popup can be suppressed with the g:MoonMakerDeleteOrphanedLuaFiles setting", "&Delete\n&Skip\n&Abort", 2, "Question" })
+      if choice == 2
+        if verbose
+          Vim.echo("Skipping orphaned lua file '#{luaRelativePath}'")
+        continue
+      if choice != 1
+        if verbose
+          Vim.echo("Aborting lua file cleanup")
+        return
+
+    File.delete(filePath)
+    if verbose
+      Vim.echo("Deleted file '#{filePath}' since it had no matching moon file")
 
 timeStampIsGreater = (file1Path, file2Path) ->
     time1 = File.getModificationTime(file1Path)
@@ -103,7 +121,7 @@ class MoonMaker
 
     return false
 
-  compileDir: (moonDir, luaDir) ->
+  compileDir: (moonDir, luaDir, verbose) ->
     numUpdated = 0
     moonBaseNames = {}
 
@@ -140,7 +158,7 @@ class MoonMaker
       moonDir = Path.join(pluginRoot, 'moon')
       luaDir = Path.join(pluginRoot, 'lua')
 
-      numUpdated += MoonMaker.compileDir(moonDir, luaDir)
+      numUpdated += MoonMaker.compileDir(moonDir, luaDir, verbose)
 
     if verbose and numUpdated == 0
       Vim.echo("All moon files are already up to date")
