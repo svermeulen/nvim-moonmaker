@@ -128,6 +128,11 @@ local Directory
 do
   local _class_0
   local _base_0 = {
+    exists = function(path)
+      return Vim.callFunction('isdirectory', {
+        path
+      }) ~= 0
+    end,
     getAllFilesWithExtensionRecursive = function(path, extension)
       local _accum_0 = { }
       local _len_0 = 1
@@ -185,13 +190,13 @@ deleteOrphanedLuaFiles = function(validBaseNames, luaDir, verbose)
         break
       end
       local alwaysDelete = false
-      if vim.api.nvim_call_function('exists', {
+      if Vim.callFunction('exists', {
         'MoonMakerDeleteOrphanedLuaFiles'
       }) == 1 then
         alwaysDelete = vim.api.nvim_get_var('MoonMakerDeleteOrphanedLuaFiles')
       end
       if not alwaysDelete then
-        local choice = vim.api.nvim_call_function("confirm", {
+        local choice = Vim.callFunction("confirm", {
           "Lua file at '" .. tostring(luaRelativePath) .. "' does not have a corresponding Moon file. Delete it?\nNote that this popup can be suppressed with the g:MoonMakerDeleteOrphanedLuaFiles setting",
           "&Delete\n&Skip\n&Abort",
           2,
@@ -282,6 +287,18 @@ do
       end
       return numUpdated
     end,
+    compileAllMoonFilesInDirectoryRecursive = function(rootDir)
+      local numUpdated = 0
+      local _list_0 = Directory.getAllFilesWithExtensionRecursive(rootDir, 'moon')
+      for _index_0 = 1, #_list_0 do
+        local moonPath = _list_0[_index_0]
+        local luaPath = moonPath:sub(0, #moonPath - 4) .. "lua"
+        if MoonMaker.compileMoonIfOutOfDate(moonPath, luaPath) then
+          numUpdated = numUpdated + 1
+        end
+      end
+      return numUpdated
+    end,
     compileAll = function(verbose)
       local rtp = Vim.eval('&rtp')
       local paths
@@ -300,6 +317,10 @@ do
         local moonDir = Path.join(pluginRoot, 'moon')
         local luaDir = Path.join(pluginRoot, 'lua')
         numUpdated = numUpdated + MoonMaker.compileDir(moonDir, luaDir, verbose)
+        local ftpluginRootDir = Path.join(pluginRoot, 'ftplugin')
+        if Directory.exists(ftpluginRootDir) then
+          numUpdated = numUpdated + MoonMaker.compileAllMoonFilesInDirectoryRecursive(ftpluginRootDir)
+        end
       end
       if verbose and numUpdated == 0 then
         Vim.echo("All moon files are already up to date")
