@@ -317,8 +317,15 @@ do
         local moonDir = Path.join(pluginRoot, 'moon')
         local luaDir = Path.join(pluginRoot, 'lua')
         numUpdated = numUpdated + MoonMaker.compileDir(moonDir, luaDir, verbose)
-        numUpdated = numUpdated + MoonMaker.compileAllMoonFilesInDirectoryRecursive(Path.join(pluginRoot, 'ftplugin'))
-        numUpdated = numUpdated + MoonMaker.compileAllMoonFilesInDirectoryRecursive(Path.join(pluginRoot, 'indent'))
+        local _list_0 = {
+          'ftplugin',
+          'indent',
+          'plugin'
+        }
+        for _index_1 = 1, #_list_0 do
+          local dirName = _list_0[_index_1]
+          numUpdated = numUpdated + MoonMaker.compileAllMoonFilesInDirectoryRecursive(Path.join(pluginRoot, dirName))
+        end
       end
       if verbose and numUpdated == 0 then
         Vim.echo("All moon files are already up to date")
