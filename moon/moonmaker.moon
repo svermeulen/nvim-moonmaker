@@ -56,6 +56,9 @@ class File
     Vim.callFunction('delete', { path })
 
 class Directory
+  exists: (path) ->
+    return Vim.callFunction('isdirectory', { path }) != 0
+
   getAllFilesWithExtensionRecursive: (path, extension) ->
     return [Path.normalize(x) for x in *Vim.callFunction('globpath', {path, "**/*.#{extension}", 0, 1})]
 
@@ -75,11 +78,11 @@ deleteOrphanedLuaFiles = (validBaseNames, luaDir, verbose) ->
       continue
 
     alwaysDelete = false
-    if vim.api.nvim_call_function('exists', {'MoonMakerDeleteOrphanedLuaFiles'}) == 1
+    if Vim.callFunction('exists', {'MoonMakerDeleteOrphanedLuaFiles'}) == 1
       alwaysDelete = vim.api.nvim_get_var('MoonMakerDeleteOrphanedLuaFiles')
 
     if not alwaysDelete
-      choice = vim.api.nvim_call_function(
+      choice = Vim.callFunction(
         "confirm", { "Lua file at '#{luaRelativePath}' does not have a corresponding Moon file. Delete it?\nNote that this popup can be suppressed with the g:MoonMakerDeleteOrphanedLuaFiles setting", "&Delete\n&Skip\n&Abort", 2, "Question" })
       if choice == 2
         if verbose
@@ -148,6 +151,14 @@ class MoonMaker
           numUpdated += 1
     return numUpdated
 
+  compileAllMoonFilesInDirectoryRecursive: (rootDir) ->
+    numUpdated = 0
+    for moonPath in *Directory.getAllFilesWithExtensionRecursive(rootDir, 'moon')
+      luaPath = moonPath\sub(0, #moonPath - 4) .. "lua"
+      if MoonMaker.compileMoonIfOutOfDate(moonPath, luaPath)
+        numUpdated += 1
+    return numUpdated
+
   compileAll: (verbose) ->
     rtp = Vim.eval('&rtp')
     paths = [Path.normalize(x) for x in string.gmatch(rtp, "([^,]+)")]
@@ -159,6 +170,11 @@ class MoonMaker
       luaDir = Path.join(pluginRoot, 'lua')
 
       numUpdated += MoonMaker.compileDir(moonDir, luaDir, verbose)
+
+      ftpluginRootDir = Path.join(pluginRoot, 'ftplugin')
+
+      if Directory.exists(ftpluginRootDir)
+        numUpdated += MoonMaker.compileAllMoonFilesInDirectoryRecursive(ftpluginRootDir)
 
     if verbose and numUpdated == 0
       Vim.echo("All moon files are already up to date")
