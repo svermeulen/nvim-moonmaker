@@ -1,9 +1,3 @@
-moon_compiler = vim.g.moon_compiler or "moonc"
-
--- TODO either make use of this or change to some boolean option
--- to allow to use yuescripts's minify option.
-moon_compile_extra_opts = vim.g.moon_compile_extra_opts or ""
-
 class Vim
   eval: (vimL) ->
     return vim.api.nvim_eval(vimL)
@@ -109,15 +103,20 @@ timeStampIsGreater = (file1Path, file2Path) ->
     return time1 > time2
 
 class MoonMaker
-  compiler: moon_compiler
+  getCompiler: () ->
+      if Vim.callFunction('exists', {'MoonCompiler'}) == 1
+          return vim.api.nvim_get_var('MoonCompiler')
+      else
+          return "moonc"
+
   executeMoon: (moonText) ->
-    local moon_cmd = compiler .. " --"
+    local moon_cmd = getCompiler() .. " --"
     luaText = Vim.callFunction("system", { moon_cmd, moonText })
     loadstring(luaText)!
 
   -- Returns true if it was compiled
   compileMoonIfOutOfDate: (moonPath, luaPath) ->
-    local moon_cmd = compiler .. " -o "
+    local moon_cmd = getCompiler() .. " -o "
     if not File.exists(luaPath) or timeStampIsGreater(moonPath, luaPath)
       Path.makeMissingDirectoriesInPath(luaPath)
       output = Vim.callFunction("system", { moon_cmd .. "#{luaPath} " .. "#{moonPath}" })
