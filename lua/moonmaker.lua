@@ -237,9 +237,18 @@ local MoonMaker
 do
   local _class_0
   local _base_0 = {
+    getCompiler = function()
+      if Vim.callFunction('exists', {
+        'g:MoonCompiler'
+      }) == 1 then
+        return vim.api.nvim_get_var('MoonCompiler')
+      else
+        return "moonc"
+      end
+    end,
     executeMoon = function(moonText)
       local luaText = Vim.callFunction("system", {
-        "moonc --",
+        MoonMaker.getCompiler() .. " --",
         moonText
       })
       return loadstring(luaText)()
@@ -248,7 +257,7 @@ do
       if not File.exists(luaPath) or timeStampIsGreater(moonPath, luaPath) then
         Path.makeMissingDirectoriesInPath(luaPath)
         local output = Vim.callFunction("system", {
-          "moonc -o \"" .. tostring(luaPath) .. "\" \"" .. tostring(moonPath) .. "\""
+          MoonMaker.getCompiler() .. " -o \"" .. tostring(luaPath) .. "\" \"" .. tostring(moonPath) .. "\""
         })
         if Vim.eval('v:shell_error') ~= 0 then
           Vim.echoError("Errors occurred while compiling file '" .. tostring(moonPath) .. "'")
