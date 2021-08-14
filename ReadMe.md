@@ -40,3 +40,4 @@ More things to be aware of:
 - Make sure to place this plugin earlier in the list of plugins with whatever plugin manager you're using, so that the lua files will be compiled as soon as possible.  This would be important if you're calling lua code during startup from one of your own plugins.
 - Currently only Neovim is supported however Vim support could be added too
 - If there are any lua files that do not have a corresponding moon file, a confirmation popup will be shown before it is deleted.  You can also suppress this popup and always delete orphaned lua files by setting `g:MoonMakerDeleteOrphanedLuaFiles` to `1`.
+- If you are using a custom moonscript compiler, you can set this using the `g:MoonCompiler` variable.  Otherwise it will use `moonc` which is assumed to exist on the PATH
