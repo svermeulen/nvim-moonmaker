@@ -104,22 +104,20 @@ timeStampIsGreater = (file1Path, file2Path) ->
 
 class MoonMaker
   getCompiler: () ->
-      if Vim.callFunction('exists', {'MoonCompiler'}) == 1
+      if Vim.callFunction('exists', {'g:MoonCompiler'}) == 1
           return vim.api.nvim_get_var('MoonCompiler')
       else
           return "moonc"
 
   executeMoon: (moonText) ->
-    local moon_cmd = getCompiler() .. " --"
-    luaText = Vim.callFunction("system", { moon_cmd, moonText })
+    luaText = Vim.callFunction("system", { MoonMaker.getCompiler() .. " --", moonText })
     loadstring(luaText)!
 
   -- Returns true if it was compiled
   compileMoonIfOutOfDate: (moonPath, luaPath) ->
-    local moon_cmd = getCompiler() .. " -o "
     if not File.exists(luaPath) or timeStampIsGreater(moonPath, luaPath)
       Path.makeMissingDirectoriesInPath(luaPath)
-      output = Vim.callFunction("system", { moon_cmd .. "#{luaPath} " .. "#{moonPath}" })
+      output = Vim.callFunction("system", { MoonMaker.getCompiler() .. " -o \"#{luaPath}\" \"#{moonPath}\"" })
 
       if Vim.eval('v:shell_error') != 0
         Vim.echoError("Errors occurred while compiling file '#{moonPath}'")
