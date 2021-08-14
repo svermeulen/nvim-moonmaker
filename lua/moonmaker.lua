@@ -191,7 +191,7 @@ deleteOrphanedLuaFiles = function(validBaseNames, luaDir, verbose)
       end
       local alwaysDelete = false
       if Vim.callFunction('exists', {
-        'MoonMakerDeleteOrphanedLuaFiles'
+        'g:MoonMakerDeleteOrphanedLuaFiles'
       }) == 1 then
         alwaysDelete = vim.api.nvim_get_var('MoonMakerDeleteOrphanedLuaFiles')
       end
