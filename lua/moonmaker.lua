@@ -309,12 +309,12 @@ do
       return numUpdated
     end,
     compileAll = function(verbose)
-      local rtp = Vim.eval('&rtp')
+      local rtp = Vim.eval('globpath(&rtp, "", 0, 1)')
       local paths
       do
         local _accum_0 = { }
         local _len_0 = 1
-        for x in string.gmatch(rtp, "([^,]+)") do
+        for _, x in ipairs(rtp) do
           _accum_0[_len_0] = Path.normalize(x)
           _len_0 = _len_0 + 1
         end

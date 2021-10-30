@@ -164,8 +164,8 @@ class MoonMaker
     return numUpdated
 
   compileAll: (verbose) ->
-    rtp = Vim.eval('&rtp')
-    paths = [Path.normalize(x) for x in string.gmatch(rtp, "([^,]+)")]
+    rtp = Vim.eval('globpath(&rtp, "", 0, 1)')
+    paths = [Path.normalize(x) for _, x in ipairs(rtp)]
 
     numUpdated = 0
 
